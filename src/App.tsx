@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
+import "./App.css";
 
 function App() {
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -21,8 +22,16 @@ function App() {
   };
 
   const loadNextSong = async () => {
-    const response = await fetch("http://localhost:8080/api/challenges/random");
-    const data = await response.json();
+    let data;
+
+    do {
+      const response = await fetch(
+        "http://localhost:8080/api/challenges/random",
+      );
+
+      data = await response.json();
+    } while (data.youtubeVideoId === videoId);
+
     setVideoId(data.youtubeVideoId);
     setArtistGuess("");
     setTitleGuess("");
@@ -73,14 +82,14 @@ function App() {
       let points = 0;
       if (result.correctArtist) points += 1;
       if (result.correctTitle) points += 1;
-      setScore(score + points);
+      setScore((prevScore) => prevScore + points);
     } catch (error) {
       console.error(error);
     }
   };
 
   const handleNextRound = () => {
-    setRound(round + 1);
+    setRound((prevRound) => prevRound + 1);
     loadNextSong();
   };
 
@@ -106,14 +115,10 @@ function App() {
         <h2>Score: {score}</h2>
       </div>
 
-      <div
-        style={{
-          visibility: showVideo ? "visible" : "hidden",
-          height: showVideo ? "auto" : "0",
-        }}
-      >
+      <div className={`video-container ${showVideo ? "visible" : "hidden"}`}>
         {videoId && (
           <YouTube
+            key={videoId}
             videoId={videoId}
             onReady={onReady}
             opts={{
