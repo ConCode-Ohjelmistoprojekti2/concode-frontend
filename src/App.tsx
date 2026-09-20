@@ -29,6 +29,10 @@ function App() {
         "http://localhost:8080/api/challenges/random",
       );
 
+      if (!response.ok) {
+        throw new Error("Failed to load song");
+      }
+
       data = await response.json();
     } while (data.youtubeVideoId === videoId);
 
