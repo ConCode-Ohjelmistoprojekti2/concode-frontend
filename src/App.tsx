@@ -131,6 +131,7 @@ function App() {
               playerVars: {
                 controls: 0,
                 disablekb: 1,
+                cc_load_policy: 0,
               },
             }}
           />
