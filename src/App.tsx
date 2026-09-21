@@ -54,7 +54,7 @@ function App() {
 
     setTimeout(() => {
       setShowVideo(true);
-    }, 4350);
+    }, 4850);
 
     setTimeout(() => {
       setShowVideo(false);
