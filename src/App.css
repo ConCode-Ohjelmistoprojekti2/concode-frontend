@@ -43,3 +43,30 @@ button {
   border-color: #2e7d32;
   color: white;
 }
+
+.main-menu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+.main-menu h1 {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.main-menu p {
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.main-menu button {
+  width: 220px;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 8px;
+}

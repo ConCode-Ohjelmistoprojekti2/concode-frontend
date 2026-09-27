@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
 import "./App.css";
 
@@ -27,6 +27,7 @@ function App() {
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
   const [challengeType, setChallengeType] = useState<ChallengeType>("random");
+  const [gameStarted, setGameStarted] = useState(false);
 
   const [artistGuess, setArtistGuess] = useState("");
   const [titleGuess, setTitleGuess] = useState("");
@@ -63,13 +64,13 @@ function App() {
     setShowVideo(false);
   }, []);
 
-  useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      void loadChallenge("random");
-    }, 0);
+  const startGame = async (type: ChallengeType) => {
+    setRound(1);
+    setScore(0);
+    setGameStarted(true);
 
-    return () => window.clearTimeout(timerId);
-  }, [loadChallenge]);
+    await loadChallenge(type);
+  };
 
   const playClip = () => {
     setShowVideo(false);
@@ -120,6 +121,20 @@ function App() {
     loadChallenge(challengeType);
   };
 
+  if (!gameStarted) {
+    return (
+      <div className="main-menu">
+        <h1>Music Video Guessing Game</h1>
+
+        <p>Guess the artist and song title from a short music video clip</p>
+
+        <button onClick={() => startGame("random")}>Survival Mode</button>
+
+        <button onClick={() => startGame("daily")}>Daily Song</button>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -168,24 +183,6 @@ function App() {
           >
             Play Hint
           </button>
-          <div className="challenge-mode-buttons">
-            <button
-              onClick={() => loadChallenge("random")}
-              className={challengeType === "random" ? "active" : ""}
-              aria-pressed={challengeType === "random"}
-              style={{ padding: "10px 20px", fontSize: "16px" }}
-            >
-              Random Challenge
-            </button>
-            <button
-              onClick={() => loadChallenge("daily")}
-              className={challengeType === "daily" ? "active" : ""}
-              aria-pressed={challengeType === "daily"}
-              style={{ padding: "10px 20px", fontSize: "16px" }}
-            >
-              Daily Challenge
-            </button>
-          </div>
         </div>
       )}
 
