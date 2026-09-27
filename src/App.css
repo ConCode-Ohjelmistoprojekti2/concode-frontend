@@ -25,3 +25,21 @@ button {
   display: block;
   margin: 8px auto;
 }
+
+.challenge-mode-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.challenge-mode-buttons button {
+  margin: 0;
+  min-width: 170px;
+  border-radius: 8px;
+}
+
+.challenge-mode-buttons button.active {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: white;
+}

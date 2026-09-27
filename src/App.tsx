@@ -1,52 +1,75 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
 import "./App.css";
 
+type ChallengeType = "random" | "daily";
+
+type ChallengeResponse = {
+  youtubeVideoId: string;
+};
+
+type GuessResult = {
+  correctArtist: boolean;
+  correctTitle: boolean;
+  answer: {
+    artist: string;
+    title: string;
+  };
+};
+
 function App() {
   const playerRef = useRef<YouTubePlayer | null>(null);
+  const videoIdRef = useRef("");
 
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
 
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
+  const [challengeType, setChallengeType] = useState<ChallengeType>("random");
 
   const [artistGuess, setArtistGuess] = useState("");
   const [titleGuess, setTitleGuess] = useState("");
 
   const [hasGuessed, setHasGuessed] = useState(false);
-  const [guessResult, setGuessResult] = useState<any>(null);
+  const [guessResult, setGuessResult] = useState<GuessResult | null>(null);
 
   const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
   };
 
-  const loadNextSong = async () => {
+  const loadChallenge = useCallback(async (type: ChallengeType) => {
     let data;
 
     do {
       const response = await fetch(
-        "http://localhost:8080/api/challenges/random",
+        `http://localhost:8080/api/challenges/${type}`,
       );
 
       if (!response.ok) {
         throw new Error("Failed to load song");
       }
 
-      data = await response.json();
-    } while (data.youtubeVideoId === videoId);
+      data = (await response.json()) as ChallengeResponse;
+    } while (type === "random" && data.youtubeVideoId === videoIdRef.current);
 
+    setChallengeType(type);
+    videoIdRef.current = data.youtubeVideoId;
     setVideoId(data.youtubeVideoId);
     setArtistGuess("");
     setTitleGuess("");
     setHasGuessed(false);
     setGuessResult(null);
     setShowVideo(false);
-  };
+  }, []);
 
   useEffect(() => {
-    loadNextSong();
-  }, []);
+    const timerId = window.setTimeout(() => {
+      void loadChallenge("random");
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, [loadChallenge]);
 
   const playClip = () => {
     setShowVideo(false);
@@ -79,7 +102,7 @@ function App() {
         },
       );
 
-      const result = await response.json();
+      const result = (await response.json()) as GuessResult;
       setGuessResult(result);
       setHasGuessed(true);
 
@@ -94,7 +117,7 @@ function App() {
 
   const handleNextRound = () => {
     setRound((prevRound) => prevRound + 1);
-    loadNextSong();
+    loadChallenge(challengeType);
   };
 
   return (
@@ -145,6 +168,24 @@ function App() {
           >
             Play Hint
           </button>
+          <div className="challenge-mode-buttons">
+            <button
+              onClick={() => loadChallenge("random")}
+              className={challengeType === "random" ? "active" : ""}
+              aria-pressed={challengeType === "random"}
+              style={{ padding: "10px 20px", fontSize: "16px" }}
+            >
+              Random Challenge
+            </button>
+            <button
+              onClick={() => loadChallenge("daily")}
+              className={challengeType === "daily" ? "active" : ""}
+              aria-pressed={challengeType === "daily"}
+              style={{ padding: "10px 20px", fontSize: "16px" }}
+            >
+              Daily Challenge
+            </button>
+          </div>
         </div>
       )}
 
