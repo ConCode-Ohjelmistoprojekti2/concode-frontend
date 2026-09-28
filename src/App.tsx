@@ -44,7 +44,7 @@ function App() {
 
     do {
       const response = await fetch(
-        `http://localhost:8080/api/challenges/${type}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/challenges/${type}`,
       );
 
       if (!response.ok) {
@@ -91,7 +91,7 @@ function App() {
 
     try {
       const response = await fetch(
-        "http://localhost:8080/api/challenges/guess",
+        `${import.meta.env.VITE_BACKEND_URL}/api/challenges/guess`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
