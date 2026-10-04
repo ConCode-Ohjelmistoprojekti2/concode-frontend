@@ -121,6 +121,11 @@ function App() {
     loadChallenge(challengeType);
   };
 
+  const returnToGameModes = () => {
+    playerRef.current?.pauseVideo();
+    setGameStarted(false);
+  };
+
   if (!gameStarted) {
     return (
       <div className="main-menu">
@@ -217,6 +222,12 @@ function App() {
             style={{ padding: "10px 20px", fontSize: "16px" }}
           >
             Submit
+          </button>
+          <button
+            onClick={returnToGameModes}
+            style={{ padding: "10px 20px", fontSize: "16px", marginTop: "10px" }}
+          >
+            Back
           </button>
         </div>
       ) : (
