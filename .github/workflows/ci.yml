@@ -1,0 +1,22 @@
+name: CI
+
+# The on option specifies, which repository actions trigger this workflow, e.g. pushing and opening a pull request
+on: [push, pull_request]
+
+ frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        # npm ci is almost the same command as npm install (https://docs.npmjs.com/cli/v8/commands/npm-ci)
+        run: cd frontend && npm ci
+      - name: Test
+        # IMPORTANT! move to correct folder before executing a command
+        # In this case, the command should be executed in the frontend folder
+        run: cd frontend && npm run test
+      - name: Build
+        run: cd src && npm run build
