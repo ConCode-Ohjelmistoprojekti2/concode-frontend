@@ -1,3 +1,5 @@
+[![CI](https://github.com/ConCode-Ohjelmistoprojekti2/concode-frontend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ConCode-Ohjelmistoprojekti2/concode-frontend/actions/workflows/ci.yml)
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
