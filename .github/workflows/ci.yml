@@ -14,7 +14,7 @@ jobs:
           node-version: 20
       - name: Install dependencies
         # npm ci is almost the same command as npm install (https://docs.npmjs.com/cli/v8/commands/npm-ci)
-        run: cd frontend && npm ci
+        run: npm ci
       - name: Test
         # IMPORTANT! move to correct folder before executing a command
         # In this case, the command should be executed in the frontend folder
