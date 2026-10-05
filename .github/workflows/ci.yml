@@ -20,4 +20,4 @@ jobs:
         # In this case, the command should be executed in the frontend folder
         run: cd frontend && npm run test
       - name: Build
-        run: cd src && npm run build
+        run: npm run build
