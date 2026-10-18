@@ -1,6 +1,9 @@
 .video-container {
   width: 640px;
   height: 360px;
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
   transition: opacity 1s ease;
   pointer-events: none;
 }
@@ -13,12 +16,17 @@
   opacity: 1;
 }
 
-.video-container {
-  width: 640px;
-  height: 360px;
-  margin: 0 auto;
-  transition: opacity 1s ease;
-  pointer-events: none;
+.video-title-mask {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 52px;
+  background: var(--bg);
+  transition: opacity 1.5s ease, transform 1.5s ease;
+}
+
+.video-title-mask.hidden {
+  opacity: 0;
+  transform: translateY(-100%);
 }
 
 button {

@@ -23,6 +23,7 @@ function App() {
 
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
+  const [isClipPlaying, setIsClipPlaying] = useState(false);
 
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
@@ -62,6 +63,7 @@ function App() {
     setHasGuessed(false);
     setGuessResult(null);
     setShowVideo(false);
+    setIsClipPlaying(false);
   }, []);
 
   const startGame = async (type: ChallengeType) => {
@@ -74,6 +76,7 @@ function App() {
 
   const playClip = () => {
     setShowVideo(false);
+    setIsClipPlaying(true);
     playerRef.current?.playVideo();
 
     setTimeout(() => {
@@ -82,6 +85,7 @@ function App() {
 
     setTimeout(() => {
       setShowVideo(false);
+      setIsClipPlaying(false);
       playerRef.current?.pauseVideo();
     }, 9000);
   };
@@ -162,7 +166,7 @@ function App() {
         <h2>Score: {score}</h2>
       </div>
 
-      <div className={`video-container ${showVideo ? "visible" : "hidden"}`}>
+      <div className={`video-container ${isClipPlaying ? "visible" : "hidden"}`}>
         {videoId && (
           <YouTube
             key={videoId}
@@ -179,6 +183,10 @@ function App() {
             }}
           />
         )}
+        <div
+          aria-hidden="true"
+          className={`video-title-mask ${showVideo ? "hidden" : "visible"}`}
+        />
       </div>
 
       {!hasGuessed && (
