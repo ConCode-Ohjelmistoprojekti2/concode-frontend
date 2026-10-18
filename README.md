@@ -9,6 +9,25 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
+## Unit tests
+
+The unit tests check that both game modes open, the correct challenge is loaded,
+empty guesses are not submitted, and points are calculated correctly.
+
+Run the tests from the terminal:
+
+```bash
+npm test
+```
+
+## Deployment
+
+The app is deployed on Render as a static site. Render runs `npm run build` and
+publishes the `dist` folder. Set `VITE_BACKEND_URL` in Render to the backend URL
+so the app can load and submit challenges.
+
+Website URL: https://concode-frontend.onrender.com
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
