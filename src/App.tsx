@@ -239,15 +239,9 @@ function App() {
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            margin: "20px 0",
-            padding: "20px",
-            backgroundColor: "#e8f5e9",
-            display: "inline-block",
-            borderRadius: "8px",
-          }}
-        >
+        
+          <div className="result-card">
+        
           <h3>Results</h3>
           <p style={{ fontSize: "18px" }}>
             Artist: <strong>{guessResult?.answer?.artist}</strong>{" "}

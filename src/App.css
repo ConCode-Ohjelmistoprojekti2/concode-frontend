@@ -1,3 +1,23 @@
+:root {
+  --burgundy: #660033;
+  --pink: #e673ac;
+  --green: #469110;
+  --dark-green: #00520a;
+
+  --bg: #15161c;
+  --surface: #22242b;
+  --text: #f5f5f5;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: sans-serif;
+}
+
+/* VIDEO */
+
 .video-container {
   width: 640px;
   height: 360px;
@@ -29,28 +49,64 @@
   transform: translateY(-100%);
 }
 
+/* BUTTONS */
+
 button {
   display: block;
-  margin: 8px auto;
+  min-width: 140px;
+  margin: 10px auto;
+  padding: 12px 24px;
+
+  border: 1px solid var(--burgundy);
+  border-radius: 12px;
+
+  background-color: var(--burgundy);
+  color: white;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
+
+button:hover {
+  background-color: var(--pink);
+  border-color: var(--pink);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* CHALLENGE MODE BUTTONS */
 
 .challenge-mode-buttons {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .challenge-mode-buttons button {
   margin: 0;
   min-width: 170px;
-  border-radius: 8px;
 }
 
 .challenge-mode-buttons button.active {
-  background-color: #2e7d32;
-  border-color: #2e7d32;
+  background-color: var(--dark-green);
+  border-color: var(--green);
   color: white;
 }
+
+/* MAIN MENU */
 
 .main-menu {
   min-height: 100vh;
@@ -58,23 +114,112 @@ button {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  padding: 30px;
+
   text-align: center;
-  font-family: sans-serif;
 }
 
 .main-menu h1 {
-  font-size: 48px;
-  margin-bottom: 10px;
+  margin: 0 0 12px;
+
+  font-size: 52px;
+  line-height: 1.1;
+  font-weight: 700;
 }
 
 .main-menu p {
+  max-width: 520px;
+
+  margin: 0 0 32px;
+
   font-size: 18px;
-  margin-bottom: 30px;
+  line-height: 1.5;
+  opacity: 0.8;
 }
 
 .main-menu button {
-  width: 220px;
-  padding: 12px 20px;
-  font-size: 16px;
-  border-radius: 8px;
+  width: 240px;
+  padding: 14px 22px;
+  border-radius: 12px;
+}
+
+.main-menu button + button {
+  margin-top: 14px;
+}
+
+/* INPUTS */
+
+input {
+  padding: 12px 14px;
+
+  border: 1px solid #555;
+  border-radius: 10px;
+
+  font-size: 15px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px rgba(230, 115, 172, 0.15);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 700px) {
+  .video-container {
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .main-menu h1 {
+    font-size: 40px;
+  }
+
+  .main-menu button {
+    width: 220px;
+  }
+
+  .challenge-mode-buttons {
+    flex-direction: column;
+  }
+}
+.result-card {
+  display: inline-block;
+  min-width: 320px;
+
+  margin: 20px 0;
+  padding: 24px;
+
+  background-color: var(--surface);
+  color: var(--text);
+
+  border: 1px solid #444;
+  border-radius: 12px;
+
+  text-align: center;
+}
+
+.result-card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+
+  font-size: 22px;
+}
+
+.result-card p {
+  margin: 10px 0;
+
+  font-size: 18px;
+  color: var(--text);
+}
+
+.result-card strong {
+  color: var(--text);
 }
