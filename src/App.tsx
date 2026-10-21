@@ -166,7 +166,9 @@ function App() {
         <h2>Score: {score}</h2>
       </div>
 
-      <div className={`video-container ${isClipPlaying ? "visible" : "hidden"}`}>
+      <div
+        className={`video-container ${isClipPlaying ? "visible" : "hidden"}`}
+      >
         {videoId && (
           <YouTube
             key={videoId}
@@ -195,7 +197,7 @@ function App() {
             onClick={playClip}
             style={{ padding: "10px 20px", fontSize: "16px" }}
           >
-            Play Hint
+            Start game
           </button>
         </div>
       )}
@@ -234,15 +236,17 @@ function App() {
           </button>
           <button
             onClick={returnToGameModes}
-            style={{ padding: "10px 20px", fontSize: "16px", marginTop: "10px" }}
+            style={{
+              padding: "10px 20px",
+              fontSize: "16px",
+              marginTop: "10px",
+            }}
           >
             Back
           </button>
         </div>
       ) : (
-        
-          <div className="result-card">
-        
+        <div className="result-card">
           <h3>Results</h3>
           <p style={{ fontSize: "18px" }}>
             Artist: <strong>{guessResult?.answer?.artist}</strong>{" "}
