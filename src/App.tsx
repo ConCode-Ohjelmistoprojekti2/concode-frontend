@@ -11,9 +11,13 @@ type ChallengeResponse = {
 type GuessResult = {
   correctArtist: boolean;
   correctTitle: boolean;
+  correctYear: boolean;
+  correctGenre: boolean;
   answer: {
     artist: string;
     title: string;
+    year: number | string;
+    genre: string;
   };
 };
 
@@ -32,6 +36,8 @@ function App() {
 
   const [artistGuess, setArtistGuess] = useState("");
   const [titleGuess, setTitleGuess] = useState("");
+  const [yearGuess, setYearGuess] = useState("");
+  const [genreGuess, setGenreGuess] = useState("");
 
   const [hasGuessed, setHasGuessed] = useState(false);
   const [guessResult, setGuessResult] = useState<GuessResult | null>(null);
@@ -60,6 +66,8 @@ function App() {
     setVideoId(data.youtubeVideoId);
     setArtistGuess("");
     setTitleGuess("");
+    setYearGuess("");
+    setGenreGuess("");
     setHasGuessed(false);
     setGuessResult(null);
     setShowVideo(false);
@@ -103,6 +111,10 @@ function App() {
             youtubeVideoId: videoId,
             artistGuess: artistGuess,
             titleGuess: titleGuess,
+            ...(challengeType === "daily" && {
+              yearGuess: yearGuess,
+              genreGuess: genreGuess,
+            }),
           }),
         },
       );
@@ -114,6 +126,8 @@ function App() {
       let points = 0;
       if (result.correctArtist) points += 1;
       if (result.correctTitle) points += 1;
+      if (challengeType === "daily" && result.correctYear) points += 1;
+      if (challengeType === "daily" && result.correctGenre) points += 1;
       setScore((prevScore) => prevScore + points);
     } catch (error) {
       console.error(error);
@@ -227,6 +241,27 @@ function App() {
               placeholder="Song Title"
               style={{ padding: "10px", marginRight: "10px", width: "200px" }}
             />
+            {challengeType === "daily" && (
+              <>
+                <input
+                  type="text"
+                  value={yearGuess}
+                  onChange={(e) => setYearGuess(e.target.value)}
+                  placeholder="Release Year"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  style={{ padding: "10px", marginRight: "10px", width: "120px" }}
+                />
+                <input
+                  type="text"
+                  value={genreGuess}
+                  onChange={(e) => setGenreGuess(e.target.value)}
+                  placeholder="Genre"
+                  style={{ padding: "10px", width: "160px" }}
+                />
+              </>
+            )}
           </div>
           <button
             onClick={submitGuess}
@@ -256,6 +291,18 @@ function App() {
             Song: <strong>{guessResult?.answer?.title}</strong>{" "}
             {guessResult?.correctTitle ? "✅" : "❌"}
           </p>
+          {challengeType === "daily" && (
+            <>
+              <p style={{ fontSize: "18px" }}>
+                Release year: <strong>{guessResult?.answer?.year}</strong>{" "}
+                {guessResult?.correctYear ? "✅" : "❌"}
+              </p>
+              <p style={{ fontSize: "18px" }}>
+                Genre: <strong>{guessResult?.answer?.genre}</strong>{" "}
+                {guessResult?.correctGenre ? "✅" : "❌"}
+              </p>
+            </>
+          )}
           <button
             onClick={handleNextRound}
             style={{
