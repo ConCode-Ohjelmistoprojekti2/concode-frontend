@@ -55,7 +55,8 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load song");
+        console.error("Guess failed", response.status, await response.text());
+        return;
       }
 
       data = (await response.json()) as ChallengeResponse;
@@ -112,7 +113,7 @@ function App() {
             artistGuess: artistGuess,
             titleGuess: titleGuess,
             ...(challengeType === "daily" && {
-              yearGuess: yearGuess,
+              yearGuess: yearGuess ? Number(yearGuess) : null,
               genreGuess: genreGuess,
             }),
           }),
