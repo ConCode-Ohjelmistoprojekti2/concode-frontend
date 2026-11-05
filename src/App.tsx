@@ -247,7 +247,7 @@ function App() {
         }}
       >
         <h2>Round: {round}</h2>
-        <h2>Score: {score.toFixed(2)}</h2>
+        <h2>Score: {Number(score.toFixed(2))}</h2>
         {challengeType === "random" && (
           <h2>Lives: {survivalLives}/{SURVIVAL_MAX_LIVES}</h2>
         )}
