@@ -1,6 +1,15 @@
 import { useCallback, useRef, useState } from "react";
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
 import "./App.css";
+import {
+  calculatePoints,
+  DAILY_MAX_ATTEMPTS,
+  getNextSurvivalLives,
+  hasAttemptsRemaining,
+  hasSurvivalGameEnded,
+  SURVIVAL_MAX_LIVES,
+} from "./gameLogic";
+
 
 type ChallengeType = "random" | "daily";
 
@@ -21,6 +30,13 @@ type GuessResult = {
   };
 };
 
+type CorrectAnswers = {
+  correctArtist: boolean;
+  correctTitle: boolean;
+  correctYear: boolean;
+  correctGenre: boolean;
+};
+
 function App() {
   const playerRef = useRef<YouTubePlayer | null>(null);
   const videoIdRef = useRef("");
@@ -28,9 +44,11 @@ function App() {
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
   const [isClipPlaying, setIsClipPlaying] = useState(false);
+  const [hasPlayedClip, setHasPlayedClip] = useState(false);
 
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
+  const [survivalLives, setSurvivalLives] = useState(SURVIVAL_MAX_LIVES);
   const [challengeType, setChallengeType] = useState<ChallengeType>("random");
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -41,6 +59,13 @@ function App() {
 
   const [hasGuessed, setHasGuessed] = useState(false);
   const [guessResult, setGuessResult] = useState<GuessResult | null>(null);
+  const [usedAttempts, setUsedAttempts] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState<CorrectAnswers>({
+    correctArtist: false,
+    correctTitle: false,
+    correctYear: false,
+    correctGenre: false,
+  });
 
   const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
@@ -65,11 +90,18 @@ function App() {
     setChallengeType(type);
     videoIdRef.current = data.youtubeVideoId;
     setVideoId(data.youtubeVideoId);
+    setCorrectAnswers({
+      correctArtist: false,
+      correctTitle: false,
+      correctYear: false,
+      correctGenre: false,
+    });
     setArtistGuess("");
     setTitleGuess("");
     setYearGuess("");
     setGenreGuess("");
     setHasGuessed(false);
+    setUsedAttempts(0);
     setGuessResult(null);
     setShowVideo(false);
     setIsClipPlaying(false);
@@ -78,12 +110,15 @@ function App() {
   const startGame = async (type: ChallengeType) => {
     setRound(1);
     setScore(0);
+    setSurvivalLives(SURVIVAL_MAX_LIVES);
+    setHasPlayedClip(false);
     setGameStarted(true);
 
     await loadChallenge(type);
   };
 
   const playClip = () => {
+    setHasPlayedClip(true);
     setShowVideo(false);
     setIsClipPlaying(true);
     playerRef.current?.playVideo();
@@ -121,21 +156,56 @@ function App() {
       );
 
       const result = (await response.json()) as GuessResult;
+      if (challengeType === "random") {
+        setSurvivalLives((currentLives) =>
+          getNextSurvivalLives(
+            currentLives,
+            result.correctArtist,
+            result.correctTitle,
+          ),
+        );
+      }
       setGuessResult(result);
-      setHasGuessed(true);
+      setScore((previousScore) =>
+        previousScore +
+        calculatePoints(result, challengeType, usedAttempts + 1, correctAnswers)
+      );
+      setCorrectAnswers((previous) => ({
+        correctArtist: previous.correctArtist || result.correctArtist,
+        correctTitle: previous.correctTitle || result.correctTitle,
+        correctYear: previous.correctYear || result.correctYear,
+        correctGenre: previous.correctGenre || result.correctGenre,
+      }));
 
-      let points = 0;
-      if (result.correctArtist) points += 1;
-      if (result.correctTitle) points += 1;
-      if (challengeType === "daily" && result.correctYear) points += 1;
-      if (challengeType === "daily" && result.correctGenre) points += 1;
-      setScore((prevScore) => prevScore + points);
+
+      const nextAttempts = usedAttempts + 1;
+      setUsedAttempts(nextAttempts);
+
+      const solvedChallenge =
+        result.correctArtist &&
+        result.correctTitle &&
+        (challengeType !== "daily" ||
+          (result.correctYear && result.correctGenre));
+
+      if (
+        challengeType !== "daily" ||
+        solvedChallenge ||
+        !hasAttemptsRemaining(nextAttempts)
+      ) {
+        setHasGuessed(true);
+      }
+
+
     } catch (error) {
       console.error(error);
     }
   };
 
   const handleNextRound = () => {
+    if (challengeType === "random" && hasSurvivalGameEnded(survivalLives)) {
+      return;
+    }
+
     setRound((prevRound) => prevRound + 1);
     loadChallenge(challengeType);
   };
@@ -158,7 +228,6 @@ function App() {
       </div>
     );
   }
-
   return (
     <div
       style={{
@@ -178,7 +247,13 @@ function App() {
         }}
       >
         <h2>Round: {round}</h2>
-        <h2>Score: {score}</h2>
+        <h2>Score: {Number(score.toFixed(2))}</h2>
+        {challengeType === "random" && (
+          <h2>Lives: {survivalLives}/{SURVIVAL_MAX_LIVES}</h2>
+        )}
+        {challengeType === "daily" && (
+          <h2>Attempts left: {DAILY_MAX_ATTEMPTS - usedAttempts}/{DAILY_MAX_ATTEMPTS}</h2>
+        )}
       </div>
 
       <div
@@ -212,7 +287,7 @@ function App() {
             onClick={playClip}
             style={{ padding: "10px 20px", fontSize: "16px" }}
           >
-            Start game
+            {hasPlayedClip ? "Play hint" : "Start game"}
           </button>
         </div>
       )}
@@ -228,39 +303,103 @@ function App() {
           }}
         >
           <div style={{ marginBottom: "15px" }}>
-            <input
-              type="text"
-              value={artistGuess}
-              onChange={(e) => setArtistGuess(e.target.value)}
-              placeholder="Artist"
-              style={{ padding: "10px", marginRight: "10px", width: "200px" }}
-            />
-            <input
-              type="text"
-              value={titleGuess}
-              onChange={(e) => setTitleGuess(e.target.value)}
-              placeholder="Song Title"
-              style={{ padding: "10px", marginRight: "10px", width: "200px" }}
-            />
+            <span style={{ display: "inline-block", position: "relative", marginRight: "10px" }}>
+              <input
+                type="text"
+                value={artistGuess}
+                onChange={(e) => setArtistGuess(e.target.value)}
+                placeholder="Artist"
+                style={{
+                  padding: "10px",
+                  paddingRight: guessResult && challengeType === "daily" ? "38px" : "10px",
+                  width: "200px",
+                  boxSizing: "border-box",
+                }}
+              />
+              {challengeType === "daily" && guessResult && (
+                <span
+                  role="img"
+                  aria-label={correctAnswers.correctArtist ? "Correct" : "Incorrect"}
+                  style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }}
+                >
+                  {correctAnswers.correctArtist ? "✅" : "❌"}
+                </span>
+              )}
+            </span>
+            <span style={{ display: "inline-block", position: "relative", marginRight: "10px" }}>
+              <input
+                type="text"
+                value={titleGuess}
+                onChange={(e) => setTitleGuess(e.target.value)}
+                placeholder="Song Title"
+                style={{
+                  padding: "10px",
+                  paddingRight: guessResult && challengeType === "daily" ? "38px" : "10px",
+                  width: "200px",
+                  boxSizing: "border-box",
+                }}
+              />
+              {challengeType === "daily" && guessResult && (
+                <span
+                  role="img"
+                  aria-label={correctAnswers.correctTitle ? "Correct" : "Incorrect"}
+                  style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }}
+                >
+                  {correctAnswers.correctTitle ? "✅" : "❌"}
+                </span>
+              )}
+            </span>
             {challengeType === "daily" && (
               <>
-                <input
-                  type="text"
-                  value={yearGuess}
-                  onChange={(e) => setYearGuess(e.target.value)}
-                  placeholder="Release Year"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  style={{ padding: "10px", marginRight: "10px", width: "120px" }}
-                />
-                <input
-                  type="text"
-                  value={genreGuess}
-                  onChange={(e) => setGenreGuess(e.target.value)}
-                  placeholder="Genre"
-                  style={{ padding: "10px", width: "160px" }}
-                />
+                <span style={{ display: "inline-block", position: "relative", marginRight: "10px" }}>
+                  <input
+                    type="text"
+                    value={yearGuess}
+                    onChange={(e) => setYearGuess(e.target.value)}
+                    placeholder="Release Year"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    style={{
+                      padding: "10px",
+                      paddingRight: guessResult ? "38px" : "10px",
+                      width: "120px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  {guessResult && (
+                    <span
+                      role="img"
+                      aria-label={correctAnswers.correctYear ? "Correct" : "Incorrect"}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }}
+                    >
+                      {correctAnswers.correctYear ? "✅" : "❌"}
+                    </span>
+                  )}
+                </span>
+                <span style={{ display: "inline-block", position: "relative" }}>
+                  <input
+                    type="text"
+                    value={genreGuess}
+                    onChange={(e) => setGenreGuess(e.target.value)}
+                    placeholder="Genre"
+                    style={{
+                      padding: "10px",
+                      paddingRight: guessResult ? "38px" : "10px",
+                      width: "160px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  {guessResult && (
+                    <span
+                      role="img"
+                      aria-label={correctAnswers.correctGenre ? "Correct" : "Incorrect"}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)" }}
+                    >
+                      {correctAnswers.correctGenre ? "✅" : "❌"}
+                    </span>
+                  )}
+                </span>
               </>
             )}
           </div>
@@ -286,33 +425,41 @@ function App() {
           <h3>Results</h3>
           <p style={{ fontSize: "18px" }}>
             Artist: <strong>{guessResult?.answer?.artist}</strong>{" "}
-            {guessResult?.correctArtist ? "✅" : "❌"}
+            {correctAnswers.correctArtist ? "✅" : "❌"}
           </p>
           <p style={{ fontSize: "18px" }}>
             Song: <strong>{guessResult?.answer?.title}</strong>{" "}
-            {guessResult?.correctTitle ? "✅" : "❌"}
+            {correctAnswers.correctTitle ? "✅" : "❌"}
           </p>
           {challengeType === "daily" && (
             <>
               <p style={{ fontSize: "18px" }}>
                 Release year: <strong>{guessResult?.answer?.year}</strong>{" "}
-                {guessResult?.correctYear ? "✅" : "❌"}
+                {correctAnswers.correctYear ? "✅" : "❌"}
               </p>
               <p style={{ fontSize: "18px" }}>
                 Genre: <strong>{guessResult?.answer?.genre}</strong>{" "}
-                {guessResult?.correctGenre ? "✅" : "❌"}
+                {correctAnswers.correctGenre ? "✅" : "❌"}
               </p>
             </>
           )}
           <button
-            onClick={handleNextRound}
+            onClick={
+              challengeType === "daily" ||
+                hasSurvivalGameEnded(survivalLives)
+                ? returnToGameModes
+                : handleNextRound
+            }
             style={{
               padding: "10px 20px",
               fontSize: "16px",
               marginTop: "15px",
             }}
           >
-            Next Round
+            {challengeType === "daily" ||
+              hasSurvivalGameEnded(survivalLives)
+              ? "Back to start screen"
+              : "Next Round"}
           </button>
         </div>
       )}
