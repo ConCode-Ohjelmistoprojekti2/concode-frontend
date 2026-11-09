@@ -1,21 +1,47 @@
+/* Con Code UI refresh — existing palette retained */
 :root {
   --burgundy: #660033;
   --pink: #e673ac;
   --green: #469110;
   --dark-green: #00520a;
-
   --bg: #15161c;
   --surface: #22242b;
   --text: #f5f5f5;
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: sans-serif;
-}
-
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
+button { font: inherit; cursor: pointer; color: #fff; background: var(--burgundy); border: 1px solid var(--burgundy); border-radius: 12px; padding: 12px 22px; font-weight: 650; transition: transform .15s ease, background .2s ease, box-shadow .2s ease; }
+button:hover { background: var(--pink); border-color: var(--pink); transform: translateY(-1px); box-shadow: 0 5px 18px rgba(0,0,0,.18); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+.eyebrow { color: var(--pink); font-size: .75rem; font-weight: 700; letter-spacing: .16em; margin: 0 0 12px; }
+.main-menu { min-height: 100svh; padding: 44px 24px; display: grid; place-items: center; text-align: center; }
+.menu-content { width: min(900px, 100%); }
+.main-menu h1 { font-size: clamp(3rem, 7vw, 5rem); margin: 0 0 16px; color: var(--text); line-height: 1.05; }
+.menu-intro { color: #c4c4c9; font-size: 1.125rem; line-height: 1.5; margin: 0 auto 40px; max-width: 560px; }
+.mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; text-align: left; }
+.mode-card { display: flex; flex-direction: column; align-items: flex-start; background: var(--surface); border: 1px solid #43454d; border-radius: 20px; padding: 30px; min-height: 255px; }
+.mode-number { color: var(--pink); font-size: .8rem; font-weight: 700; letter-spacing: .1em; }
+.mode-card h2 { color: var(--text); font-size: 1.6rem; margin: 16px 0 12px; }
+.mode-card p { color: #c4c4c9; line-height: 1.5; margin: 0 0 24px; }
+.mode-card button { margin-top: auto; width: 100%; }
+.game-page { width: min(960px, 100%); margin: 0 auto; padding: 24px 22px 56px; }
+.game-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
+.game-heading { text-align: right; }
+.game-heading .eyebrow { margin-bottom: 4px; }
+.game-heading h1 { color: var(--text); font-size: 2.4rem; margin: 0; }
+.back-link, .secondary-button { background: transparent; border-color: #575961; color: var(--text); }
+.back-link:hover, .secondary-button:hover { background: #32343b; border-color: #696b73; }
+.game-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--surface); border: 1px solid #3d3f47; border-radius: 15px; padding: 17px 22px; display: flex; flex-direction: column; gap: 7px; }
+.stat-card span { color: #bebfc6; font-size: .83rem; }
+.stat-card strong { font-size: 1.55rem; color: var(--text); }
+.play-panel { background: var(--surface); border: 1px solid #41434b; border-radius: 20px; padding: 24px; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.panel-heading .eyebrow { margin-bottom: 4px; }
+.panel-heading h2 { margin: 0; font-size: 1.35rem; color: var(--text); }
+.round-tag { border: 1px solid #575961; border-radius: 999px; padding: 8px 13px; color: #dedee2; font-size: .85rem; white-space: nowrap; }
+.video-stage { max-width: 640px; margin: 0 auto; }
 /* VIDEO */
 
 .video-container {
@@ -40,7 +66,7 @@ body {
   position: absolute;
   inset: 0 0 auto;
   height: 52px;
-  background: var(--bg);
+  background: var(--surface);
   transition: opacity 1.5s ease, transform 1.5s ease;
 }
 
@@ -48,178 +74,47 @@ body {
   opacity: 0;
   transform: translateY(-100%);
 }
-
-/* BUTTONS */
-
-button {
-  display: block;
-  min-width: 140px;
-  margin: 10px auto;
-  padding: 12px 24px;
-
-  border: 1px solid var(--burgundy);
-  border-radius: 12px;
-
-  background-color: var(--burgundy);
-  color: white;
-
-  font-size: 16px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-button:hover {
-  background-color: var(--pink);
-  border-color: var(--pink);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-}
-
-button:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-/* CHALLENGE MODE BUTTONS */
-
-.challenge-mode-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-}
-
-.challenge-mode-buttons button {
+.stat-card h2 {
   margin: 0;
-  min-width: 170px;
-}
-
-.challenge-mode-buttons button.active {
-  background-color: var(--dark-green);
-  border-color: var(--green);
-  color: white;
-}
-
-/* MAIN MENU */
-
-.main-menu {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-  padding: 30px;
-
-  text-align: center;
-}
-
-.main-menu h1 {
-  margin: 0 0 12px;
-
-  font-size: 52px;
-  line-height: 1.1;
+  font-size: inherit;
   font-weight: 700;
+  color: inherit;
 }
 
-.main-menu p {
-  max-width: 520px;
-
-  margin: 0 0 32px;
-
-  font-size: 18px;
-  line-height: 1.5;
-  opacity: 0.8;
-}
-
-.main-menu button {
-  width: 240px;
-  padding: 14px 22px;
-  border-radius: 12px;
-}
-
-.main-menu button + button {
-  margin-top: 14px;
-}
-
-/* INPUTS */
-
-input {
-  padding: 12px 14px;
-
-  border: 1px solid #555;
-  border-radius: 10px;
-
-  font-size: 15px;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-input:focus {
-  border-color: var(--pink);
-  box-shadow: 0 0 0 3px rgba(230, 115, 172, 0.15);
-}
-
-/* RESPONSIVE */
-
+/* The video and title-mask CSS above is intentionally identical to the original. */
+.play-controls { text-align: center; margin: 18px auto 22px; }
+.play-button { min-width: 210px; }
+.guess-card { background: var(--bg); border: 1px solid #41434b; border-radius: 16px; padding: 24px; }
+.guess-card h3 { color: var(--text); margin: 0 0 5px; font-size: 1.25rem; }
+.form-help { color: #bdbdc4; margin: 0 0 20px; }
+.guess-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.guess-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; color: #e6e6e9; font-size: .9rem; }
+.input-holder { display: block; position: relative; }
+.guess-field input { background: var(--surface); color: var(--text); border: 1px solid #575961; border-radius: 10px; padding: 12px 42px 12px 14px; width: 100%; min-width: 0; font: inherit; }
+.guess-field input::placeholder { color: #a6a6af; }
+.answer-mark { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
+.form-actions { display: flex; gap: 12px; margin-top: 22px; }
+.form-actions button { margin: 0; }
+.submit-button { flex: 1; }
+.result-card { background: var(--bg); border: 1px solid #41434b; border-radius: 16px; padding: 24px; }
+.result-card h3 { margin: 0 0 18px; color: var(--text); font-size: 1.4rem; }
+.result-line { display: grid; grid-template-columns: minmax(95px, 1fr) minmax(0, 2fr) auto; align-items: center; gap: 12px; border-top: 1px solid #353741; padding: 13px 0; }
+.result-line > span:first-child { color: #bdbdc4; }
+.result-line strong { color: var(--text); overflow-wrap: anywhere; }
+.result-button { margin-top: 18px; width: 100%; }
 @media (max-width: 700px) {
-  .video-container {
-    width: 100%;
-    max-width: 640px;
-  }
-
-  .main-menu h1 {
-    font-size: 40px;
-  }
-
-  .main-menu button {
-    width: 220px;
-  }
-
-  .challenge-mode-buttons {
-    flex-direction: column;
-  }
-}
-.result-card {
-  display: inline-block;
-  min-width: 320px;
-
-  margin: 20px 0;
-  padding: 24px;
-
-  background-color: var(--surface);
-  color: var(--text);
-
-  border: 1px solid #444;
-  border-radius: 12px;
-
-  text-align: center;
-}
-
-.result-card h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-
-  font-size: 22px;
-}
-
-.result-card p {
-  margin: 10px 0;
-
-  font-size: 18px;
-  color: var(--text);
-}
-
-.result-card strong {
-  color: var(--text);
+  .main-menu { padding: 30px 16px; }
+  .mode-grid, .guess-grid { grid-template-columns: 1fr; }
+  .game-page { padding: 18px 12px 36px; }
+  .game-header { align-items: flex-start; }
+  .game-heading h1 { font-size: 1.9rem; }
+  .game-stats { gap: 8px; }
+  .stat-card { padding: 12px 9px; }
+  .stat-card strong { font-size: 1.1rem; }
+  .play-panel { padding: 14px; }
+  .round-tag { display: none; }
+  .form-actions { flex-direction: column; }
+  /* Keep the title mask attached to the same video frame on narrow screens. */
+  .video-container { width: 100%; max-width: 640px; height: auto; aspect-ratio: 16 / 9; }
+  .video-container iframe { width: 100%; height: 100%; }
 }
