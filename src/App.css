@@ -74,7 +74,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outl
   opacity: 0;
   transform: translateY(-100%);
 }
-
+.stat-card h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 700;
+  color: inherit;
+}
 
 /* The video and title-mask CSS above is intentionally identical to the original. */
 .play-controls { text-align: center; margin: 18px auto 22px; }
