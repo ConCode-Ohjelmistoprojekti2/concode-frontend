@@ -12,6 +12,11 @@ import {
 
 type ChallengeType = "random" | "daily";
 
+type LeaderboardScore = {
+  playerName: string;
+  score: number;
+};
+
 type ChallengeResponse = {
   youtubeVideoId: string;
 };
@@ -50,6 +55,7 @@ function App() {
   const [survivalLives, setSurvivalLives] = useState(SURVIVAL_MAX_LIVES);
   const [challengeType, setChallengeType] = useState<ChallengeType>("random");
   const [gameStarted, setGameStarted] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const [artistGuess, setArtistGuess] = useState("");
   const [titleGuess, setTitleGuess] = useState("");
@@ -65,6 +71,14 @@ function App() {
     correctYear: false,
     correctGenre: false,
   });
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [playerName, setPlayerName] = useState("");
+  const [scoreMessage, setScoreMessage] = useState("");
+  const [isSavingScore, setIsSavingScore] = useState(false);
+  const [leaderboardMode, setLeaderboardMode] = useState<ChallengeType>("daily");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardScore[]>([]);
+  const [leaderboardMessage, setLeaderboardMessage] = useState("");
 
   const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
@@ -111,6 +125,10 @@ function App() {
     setScore(0);
     setSurvivalLives(SURVIVAL_MAX_LIVES);
     setHasPlayedClip(false);
+    setGameCompleted(false);
+    setFinalScore(0);
+    setPlayerName("");
+    setScoreMessage("");
     setGameStarted(true);
 
     await loadChallenge(type);
@@ -155,26 +173,23 @@ function App() {
       );
 
       const result = (await response.json()) as GuessResult;
-      if (challengeType === "random") {
-        setSurvivalLives((currentLives) =>
-          getNextSurvivalLives(
-            currentLives,
+      const nextLives = challengeType === "random"
+        ? getNextSurvivalLives(
+            survivalLives,
             result.correctArtist,
             result.correctTitle,
-          ),
-        );
-      }
+          )
+        : survivalLives;
+
+      if (challengeType === "random") setSurvivalLives(nextLives);
       setGuessResult(result);
-      setScore(
-        (previousScore) =>
-          previousScore +
-          calculatePoints(
-            result,
-            challengeType,
-            usedAttempts + 1,
-            correctAnswers,
-          ),
+      const nextScore = score + calculatePoints(
+        result,
+        challengeType,
+        usedAttempts + 1,
+        correctAnswers,
       );
+      setScore(nextScore);
       setCorrectAnswers((previous) => ({
         correctArtist: previous.correctArtist || result.correctArtist,
         correctTitle: previous.correctTitle || result.correctTitle,
@@ -190,6 +205,9 @@ function App() {
         result.correctTitle &&
         (challengeType !== "daily" ||
           (result.correctYear && result.correctGenre));
+      const gameHasEnded = challengeType === "random"
+        ? hasSurvivalGameEnded(nextLives)
+        : solvedChallenge || !hasAttemptsRemaining(nextAttempts);
 
       if (
         challengeType !== "daily" ||
@@ -197,6 +215,11 @@ function App() {
         !hasAttemptsRemaining(nextAttempts)
       ) {
         setHasGuessed(true);
+      }
+
+      if (gameHasEnded) {
+        setFinalScore(nextScore);
+        setGameCompleted(true);
       }
     } catch (error) {
       console.error(error);
@@ -215,9 +238,94 @@ function App() {
   const returnToGameModes = () => {
     playerRef.current?.pauseVideo();
     setGameStarted(false);
+    setShowLeaderboard(false);
+  };
+
+  const loadLeaderboard = async (mode: ChallengeType) => {
+    setLeaderboardMessage("Loading scores...");
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/scores/leaderboard/${mode}`,
+      );
+      if (!response.ok) throw new Error("Could not load leaderboard");
+
+      const scores = (await response.json()) as LeaderboardScore[];
+      setLeaderboard(scores);
+      setLeaderboardMessage(scores.length ? "" : "No scores yet. Be the first!");
+    } catch (error) {
+      console.error(error);
+      setLeaderboard([]);
+      setLeaderboardMessage("Could not load the leaderboard.");
+    }
+  };
+
+  const openLeaderboard = () => {
+    setShowLeaderboard(true);
+    void loadLeaderboard(leaderboardMode);
+  };
+
+  const selectLeaderboardMode = (mode: ChallengeType) => {
+    setLeaderboardMode(mode);
+    void loadLeaderboard(mode);
+  };
+
+  const saveScore = async () => {
+    const name = playerName.trim();
+    if (!name) {
+      setScoreMessage("Enter a name to save your score.");
+      return;
+    }
+
+    setIsSavingScore(true);
+    setScoreMessage("");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/scores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerName: name,
+          score: Math.round(finalScore),
+          mode: challengeType.toUpperCase(),
+        }),
+      });
+      if (!response.ok) throw new Error("Could not save score");
+      setScoreMessage("Score saved to the leaderboard.");
+    } catch (error) {
+      console.error(error);
+      setScoreMessage("Could not save your score. Please try again.");
+    } finally {
+      setIsSavingScore(false);
+    }
   };
 
   if (!gameStarted) {
+    if (showLeaderboard) {
+      return (
+        <main className="main-menu leaderboard-screen">
+          <div className="menu-content leaderboard-page">
+            <button className="back-link" onClick={() => setShowLeaderboard(false)}>
+              ← Game modes
+            </button>
+            <p className="eyebrow">TOP SCORES</p>
+            <h1>Leaderboards</h1>
+            <div className="leaderboard-tabs" role="tablist" aria-label="Leaderboard mode">
+              <button role="tab" aria-selected={leaderboardMode === "daily"} className={leaderboardMode === "daily" ? "active-tab" : "secondary-button"} onClick={() => selectLeaderboardMode("daily")}>Daily</button>
+              <button role="tab" aria-selected={leaderboardMode === "random"} className={leaderboardMode === "random" ? "active-tab" : "secondary-button"} onClick={() => selectLeaderboardMode("random")}>Survival</button>
+            </div>
+            <section className="leaderboard-list" aria-live="polite">
+              {leaderboard.map((entry, index) => (
+                <div className="leaderboard-row" key={`${entry.playerName}-${index}`}>
+                  <span>#{index + 1}</span><strong>{entry.playerName}</strong><span>{entry.score} pts</span>
+                </div>
+              ))}
+              {leaderboardMessage && <p className="form-help">{leaderboardMessage}</p>}
+            </section>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="main-menu">
         <div className="menu-content">
@@ -250,6 +358,16 @@ function App() {
               </button>
             </section>
           </div>
+          <section className="leaderboard-card">
+            <div>
+              <span className="mode-number">03 / SCORES</span>
+              <h2>Leaderboards</h2>
+              <p>See how your score compares with other players.</p>
+            </div>
+            <button className="leaderboard-link" onClick={openLeaderboard}>
+              View leaderboards
+            </button>
+          </section>
         </div>
       </main>
     );
@@ -476,18 +594,26 @@ function App() {
                 </div>
               </>
             )}
-            <button
-              className="result-button"
-              onClick={
-                challengeType === "daily" || hasSurvivalGameEnded(survivalLives)
-                  ? returnToGameModes
-                  : handleNextRound
-              }
-            >
-              {challengeType === "daily" || hasSurvivalGameEnded(survivalLives)
-                ? "Back to start screen"
-                : "Next Round"}
-            </button>
+            {gameCompleted ? (
+              <div className="score-entry">
+                <p>Your final score: <strong>{Number(finalScore.toFixed(2))}</strong></p>
+                <label className="guess-field">
+                  <span>Player name</span>
+                  <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={30} placeholder="Your name" />
+                </label>
+                <div className="form-actions">
+                  <button onClick={() => void saveScore()} disabled={isSavingScore || scoreMessage === "Score saved to the leaderboard."}>
+                    {isSavingScore ? "Saving..." : "Save score"}
+                  </button>
+                  <button className="secondary-button" onClick={returnToGameModes}>Back to start screen</button>
+                </div>
+                {scoreMessage && <p className="form-help" role="status">{scoreMessage}</p>}
+              </div>
+            ) : (
+              <button className="result-button" onClick={challengeType === "daily" || hasSurvivalGameEnded(survivalLives) ? returnToGameModes : handleNextRound}>
+                {challengeType === "daily" || hasSurvivalGameEnded(survivalLives) ? "Back to start screen" : "Next Round"}
+              </button>
+            )}
           </div>
         )}
       </section>
