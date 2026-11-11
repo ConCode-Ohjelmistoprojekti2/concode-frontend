@@ -25,6 +25,21 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outl
 .mode-card h2 { color: var(--text); font-size: 1.6rem; margin: 16px 0 12px; }
 .mode-card p { color: #c4c4c9; line-height: 1.5; margin: 0 0 24px; }
 .mode-card button { margin-top: auto; width: 100%; }
+.leaderboard-card { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 20px; padding: 20px 30px; text-align: left; background: var(--surface); border: 1px solid #43454d; border-radius: 20px; }
+.leaderboard-card h2 { margin: 8px 0; font-size: 1.35rem; }
+.leaderboard-card p { margin: 0; color: #c4c4c9; }
+.leaderboard-link { min-width: 190px; }
+.leaderboard-screen { display: grid; place-items: center; }
+.leaderboard-page { text-align: center; }
+.leaderboard-page .back-link { display: block; margin: 0 auto 32px; }
+.leaderboard-tabs { display: flex; justify-content: center; gap: 10px; margin: 28px 0 16px; }
+.active-tab { background: var(--pink); border-color: var(--pink); }
+.leaderboard-list { max-width: 620px; margin: 0 auto; background: var(--surface); border: 1px solid #43454d; border-radius: 16px; padding: 8px 20px; text-align: left; }
+.leaderboard-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 15px 4px; border-bottom: 1px solid #353741; }
+.leaderboard-row:last-child { border-bottom: 0; }
+.leaderboard-row > span { color: #c4c4c9; }
+.score-entry { border-top: 1px solid #353741; margin-top: 18px; padding-top: 18px; }
+.score-entry > p { margin-top: 0; color: #dedee2; }
 .game-page { width: min(960px, 100%); margin: 0 auto; padding: 24px 22px 56px; }
 .game-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; }
 .game-heading { text-align: right; }
@@ -105,6 +120,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outl
 @media (max-width: 700px) {
   .main-menu { padding: 30px 16px; }
   .mode-grid, .guess-grid { grid-template-columns: 1fr; }
+  .leaderboard-card { flex-direction: column; text-align: center; padding: 22px; }
   .game-page { padding: 18px 12px 36px; }
   .game-header { align-items: flex-start; }
   .game-heading h1 { font-size: 1.9rem; }
@@ -114,6 +130,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outl
   .play-panel { padding: 14px; }
   .round-tag { display: none; }
   .form-actions { flex-direction: column; }
+  .leaderboard-list { padding: 8px 14px; }
   /* Keep the title mask attached to the same video frame on narrow screens. */
   .video-container { width: 100%; max-width: 640px; height: auto; aspect-ratio: 16 / 9; }
   .video-container iframe { width: 100%; height: 100%; }
