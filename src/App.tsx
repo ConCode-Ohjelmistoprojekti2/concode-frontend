@@ -41,6 +41,10 @@ type CorrectAnswers = {
   correctGenre: boolean;
 };
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
 function App() {
   const playerRef = useRef<YouTubePlayer | null>(null);
   const videoIdRef = useRef("");
@@ -61,6 +65,9 @@ function App() {
   const [titleGuess, setTitleGuess] = useState("");
   const [yearGuess, setYearGuess] = useState("");
   const [genreGuess, setGenreGuess] = useState("");
+  const [genres, setGenres] = useState<string[]>([]);
+  const [isLoadingGenres, setIsLoadingGenres] = useState(false);
+  const [genreLoadMessage, setGenreLoadMessage] = useState("");
 
   const [hasGuessed, setHasGuessed] = useState(false);
   const [guessResult, setGuessResult] = useState<GuessResult | null>(null);
@@ -131,8 +138,32 @@ function App() {
     setScoreMessage("");
     setGameStarted(true);
 
+    if (type === "daily") void loadGenres();
     await loadChallenge(type);
   };
+
+  async function loadGenres() {
+    setIsLoadingGenres(true);
+    setGenreLoadMessage("");
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/songs/genres`,
+      );
+      if (!response.ok) throw new Error("Could not load genres");
+
+      const data: unknown = await response.json();
+      if (!isStringArray(data)) throw new Error("Invalid genres response");
+
+      setGenres(data);
+    } catch (error) {
+      console.error(error);
+      setGenres([]);
+      setGenreLoadMessage("Could not load genres.");
+    } finally {
+      setIsLoadingGenres(false);
+    }
+  }
 
   const playClip = () => {
     setHasPlayedClip(true);
@@ -532,13 +563,20 @@ function App() {
                   </label>
                   <label className="guess-field">
                     <span>Genre</span>
-                    <span className="input-holder">
-                      <input
-                        type="text"
+                    <span className="input-holder genre-holder">
+                      <select
+                        className={genreGuess ? "" : "genre-placeholder"}
                         value={genreGuess}
                         onChange={(e) => setGenreGuess(e.target.value)}
-                        placeholder="Genre"
-                      />
+                        disabled={isLoadingGenres || genres.length === 0}
+                      >
+                        <option value="">Genre</option>
+                        {genres.map((genre) => (
+                          <option key={genre} value={genre}>
+                            {genre}
+                          </option>
+                        ))}
+                      </select>
                       {guessResult && (
                         <span
                           className="answer-mark"
@@ -553,6 +591,11 @@ function App() {
                         </span>
                       )}
                     </span>
+                    {genreLoadMessage && (
+                      <span className="genre-error" role="alert">
+                        {genreLoadMessage}
+                      </span>
+                    )}
                   </label>
                 </>
               )}

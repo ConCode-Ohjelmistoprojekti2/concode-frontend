@@ -13,7 +13,7 @@
 body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; }
 button { font: inherit; cursor: pointer; color: #fff; background: var(--burgundy); border: 1px solid var(--burgundy); border-radius: 12px; padding: 12px 22px; font-weight: 650; transition: transform .15s ease, background .2s ease, box-shadow .2s ease; }
 button:hover { background: var(--pink); border-color: var(--pink); transform: translateY(-1px); box-shadow: 0 5px 18px rgba(0,0,0,.18); }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
 .eyebrow { color: var(--pink); font-size: .75rem; font-weight: 700; letter-spacing: .16em; margin: 0 0 12px; }
 .main-menu { min-height: 100svh; padding: 44px 24px; display: grid; place-items: center; text-align: center; }
 .menu-content { width: min(900px, 100%); }
@@ -105,7 +105,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--pink); outl
 .guess-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .guess-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; color: #e6e6e9; font-size: .9rem; }
 .input-holder { display: block; position: relative; }
-.guess-field input { background: var(--surface); color: var(--text); border: 1px solid #575961; border-radius: 10px; padding: 12px 42px 12px 14px; width: 100%; min-width: 0; font: inherit; }
+.guess-field input, .guess-field select { background: var(--surface); color: var(--text); border: 1px solid #575961; border-radius: 10px; padding: 12px 42px 12px 14px; width: 100%; min-width: 0; font: inherit; }
+.guess-field select.genre-placeholder, .guess-field select.genre-placeholder option[value=""] { color: #a6a6af; }
+.guess-field select.genre-placeholder option:not([value=""]) { color: var(--text); }
+.guess-field select:disabled { opacity: .7; }
+.genre-error { display: block; color: #e673ac; font-size: .8rem; margin-top: 6px; }
+.genre-holder .answer-mark { right: 34px; }
 .guess-field input::placeholder { color: #a6a6af; }
 .answer-mark { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
 .form-actions { display: flex; gap: 12px; margin-top: 22px; }
