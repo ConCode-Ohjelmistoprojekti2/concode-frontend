@@ -11,10 +11,12 @@ vi.mock("react-youtube", () => ({ default: () => null }));
 const mockFetch = vi.fn();
 
 beforeEach(() => {
-    mockFetch.mockResolvedValue({
+    mockFetch.mockImplementation((url: string) => Promise.resolve({
         ok: true,
-        json: async () => ({ youtubeVideoId: "test-video" }),
-    });
+        json: async () => url.includes("/api/songs/genres")
+            ? ["Rock", "Pop"]
+            : { youtubeVideoId: "test-video" },
+    }));
     vi.stubGlobal("fetch", mockFetch);
 });
 
@@ -59,6 +61,10 @@ describe("App start screen", () => {
             await screen.findByRole("heading", { name: "Con Code" }),
         ).toBeInTheDocument();
         expect(screen.getByRole("heading", { name: "Round: 1" })).toBeInTheDocument();
+        expect(await screen.findByRole("option", { name: "Rock" })).toBeInTheDocument();
+        expect(mockFetch).toHaveBeenCalledWith(
+            expect.stringContaining("/api/songs/genres"),
+        );
         expect(mockFetch).toHaveBeenCalledWith(
             expect.stringContaining("/api/challenges/daily"),
         );
