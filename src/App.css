@@ -122,6 +122,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .result-line > span:first-child { color: #bdbdc4; }
 .result-line strong { color: var(--text); overflow-wrap: anywhere; }
 .result-button { margin-top: 18px; width: 100%; }
+.account-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 18px; color: #bdbdc4; font-size: .9rem; }
+.account-actions .secondary-button { margin: 0; }
+.auth-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / 70%); }
+.auth-dialog { width: min(440px, 100%); background: var(--bg); border: 1px solid #575961; border-radius: 16px; padding: 28px; box-shadow: 0 20px 60px rgb(0 0 0 / 45%); }
+.auth-dialog h2 { margin: 4px 0 20px; color: var(--text); }
+.auth-dialog .guess-field { margin-top: 14px; }
+.text-button { display: inline; margin: 0; padding: 0; min-width: 0; border: 0; background: transparent; color: #e673ac; text-decoration: underline; font: inherit; }
 @media (max-width: 700px) {
   .main-menu { padding: 30px 16px; }
   .mode-grid, .guess-grid { grid-template-columns: 1fr; }
