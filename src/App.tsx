@@ -1,6 +1,8 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
+import type { Session } from "@supabase/supabase-js";
 import "./App.css";
+import { supabase, supabaseIsConfigured } from "./supabase";
 import {
   calculatePoints,
   DAILY_MAX_ATTEMPTS,
@@ -11,6 +13,7 @@ import {
 } from "./gameLogic";
 
 type ChallengeType = "random" | "daily";
+type AuthMode = "login" | "signup" | "forgot-password" | "reset-password";
 
 type LeaderboardScore = {
   playerName: string;
@@ -80,12 +83,32 @@ function App() {
   });
   const [gameCompleted, setGameCompleted] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
-  const [playerName, setPlayerName] = useState("");
   const [scoreMessage, setScoreMessage] = useState("");
   const [isSavingScore, setIsSavingScore] = useState(false);
   const [leaderboardMode, setLeaderboardMode] = useState<ChallengeType>("daily");
   const [leaderboard, setLeaderboard] = useState<LeaderboardScore[]>([]);
   const [leaderboardMessage, setLeaderboardMessage] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authUsername, setAuthUsername] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthMessage("");
+        setAuthMode("reset-password");
+      }
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const onReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
@@ -134,7 +157,6 @@ function App() {
     setHasPlayedClip(false);
     setGameCompleted(false);
     setFinalScore(0);
-    setPlayerName("");
     setScoreMessage("");
     setGameStarted(true);
 
@@ -302,37 +324,139 @@ function App() {
   };
 
   const saveScore = async () => {
-    const name = playerName.trim();
-    if (!name) {
-      setScoreMessage("Enter a name to save your score.");
+    if (!session || !supabase) {
+      setAuthMode("login");
       return;
     }
 
     setIsSavingScore(true);
     setScoreMessage("");
     try {
+      const username = session.user.user_metadata.username;
+      if (typeof username !== "string" || !username) {
+        throw new Error("Your account does not have a username. Please contact support.");
+      }
+      const profileResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/profiles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ username }),
+      });
+      if (!profileResponse.ok) throw new Error(await profileResponse.text());
+
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/scores`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
-          playerName: name,
           score: Math.round(finalScore),
           mode: challengeType.toUpperCase(),
         }),
       });
-      if (!response.ok) throw new Error("Could not save score");
+      if (!response.ok) throw new Error(await response.text());
       setScoreMessage("Score saved to the leaderboard.");
     } catch (error) {
       console.error(error);
-      setScoreMessage("Could not save your score. Please try again.");
+      const message = error instanceof Error ? error.message : "Could not save your score.";
+      setScoreMessage(message.includes("already saved")
+        ? "You have already registered this mode today."
+        : message.includes("username") ? "That username is unavailable. Create a new account with another username."
+          : "Could not save your score. Please try again.");
     } finally {
       setIsSavingScore(false);
     }
   };
 
+  const openAuth = (mode: AuthMode = "login") => {
+    setAuthMessage("");
+    setAuthPassword("");
+    setAuthMode(mode);
+  };
+
+  const submitAuth = async () => {
+    if (!supabase) {
+      setAuthMessage("Authentication is not configured yet.");
+      return;
+    }
+    setIsAuthenticating(true);
+    setAuthMessage("");
+    try {
+      if (authMode === "signup") {
+        const username = authUsername.trim();
+        if (!/^[A-Za-z0-9_-]{1,30}$/.test(username)) {
+          throw new Error("Username: 1–30 letters, numbers, underscores or hyphens.");
+        }
+        const { data, error } = await supabase.auth.signUp({
+          email: authEmail.trim(),
+          password: authPassword,
+          options: { emailRedirectTo: window.location.origin, data: { username } },
+        });
+        if (error) throw error;
+        if (data.session) {
+          setSession(data.session);
+          setAuthMode(null);
+        } else {
+          setAuthMessage("Check your email to confirm your account, then log in.");
+        }
+      } else if (authMode === "login") {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail.trim(), password: authPassword,
+        });
+        if (error) throw error;
+        setSession(data.session);
+        setAuthMode(null);
+      } else if (authMode === "forgot-password") {
+        const { error } = await supabase.auth.resetPasswordForEmail(authEmail.trim(), {
+          redirectTo: window.location.origin,
+        });
+        if (error) throw error;
+        setAuthMessage("Check your email for a password-reset link.");
+      } else if (authMode === "reset-password") {
+        const { error } = await supabase.auth.updateUser({ password: authPassword });
+        if (error) throw error;
+        setAuthMessage("Password updated. You can continue playing.");
+      }
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Could not complete that request.");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const signOut = async () => {
+    await supabase?.auth.signOut();
+    setSession(null);
+  };
+
+  const authDialog = authMode && (
+    <div className="auth-backdrop" role="presentation">
+      <section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+        <button className="back-link" onClick={() => setAuthMode(null)}>× Close</button>
+        <p className="eyebrow">ACCOUNT</p>
+        <h2 id="auth-title">
+          {authMode === "signup" ? "Create account" : authMode === "login" ? "Log in" : authMode === "forgot-password" ? "Reset password" : "Choose a new password"}
+        </h2>
+        {authMode === "signup" && <label className="guess-field"><span>Username</span><input value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} maxLength={30} autoComplete="username" /></label>}
+        {authMode !== "reset-password" && <label className="guess-field"><span>Email</span><input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} autoComplete="email" /></label>}
+        {authMode !== "forgot-password" && <label className="guess-field"><span>{authMode === "reset-password" ? "New password" : "Password"}</span><input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} minLength={6} autoComplete={authMode === "signup" ? "new-password" : "current-password"} /></label>}
+        <div className="form-actions">
+          <button onClick={() => void submitAuth()} disabled={isAuthenticating || !supabaseIsConfigured}>{isAuthenticating ? "Please wait..." : authMode === "signup" ? "Create account" : authMode === "login" ? "Log in" : authMode === "forgot-password" ? "Send reset link" : "Update password"}</button>
+        </div>
+        {authMessage && <p className="form-help" role="status">{authMessage}</p>}
+        {authMode === "login" && <p className="form-help"><button className="text-button" onClick={() => openAuth("forgot-password")}>Forgot password?</button> · <button className="text-button" onClick={() => openAuth("signup")}>Create an account</button></p>}
+        {authMode === "signup" && <p className="form-help">Already have an account? <button className="text-button" onClick={() => openAuth("login")}>Log in</button></p>}
+      </section>
+    </div>
+  );
+
   if (!gameStarted) {
     if (showLeaderboard) {
       return (
+        <>
         <main className="main-menu leaderboard-screen">
           <div className="menu-content leaderboard-page">
             <button className="back-link" onClick={() => setShowLeaderboard(false)}>
@@ -354,12 +478,18 @@ function App() {
             </section>
           </div>
         </main>
+        {authDialog}
+        </>
       );
     }
 
     return (
+      <>
       <main className="main-menu">
         <div className="menu-content">
+          <div className="account-actions">
+            {session ? <><span>Signed in as <strong>{typeof session.user.user_metadata.username === "string" ? session.user.user_metadata.username : session.user.email}</strong></span><button className="secondary-button" onClick={() => void signOut()}>Log out</button></> : <button className="secondary-button" onClick={() => openAuth("login")}>Log in</button>}
+          </div>
           <p className="eyebrow">MUSIC GUESSING GAME</p>
           <h1>Name The Video</h1>
           <p className="menu-intro">
@@ -401,10 +531,13 @@ function App() {
           </section>
         </div>
       </main>
+      {authDialog}
+      </>
     );
   }
 
   return (
+    <>
     <main className="game-page">
       <header className="game-header">
         <button className="back-link" onClick={returnToGameModes}>
@@ -640,16 +773,13 @@ function App() {
             {gameCompleted ? (
               <div className="score-entry">
                 <p>Your final score: <strong>{Number(finalScore.toFixed(2))}</strong></p>
-                <label className="guess-field">
-                  <span>Player name</span>
-                  <input value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={30} placeholder="Your name" />
-                </label>
                 <div className="form-actions">
-                  <button onClick={() => void saveScore()} disabled={isSavingScore || scoreMessage === "Score saved to the leaderboard."}>
+                  {session ? <button onClick={() => void saveScore()} disabled={isSavingScore || scoreMessage === "Score saved to the leaderboard."}>
                     {isSavingScore ? "Saving..." : "Save score"}
-                  </button>
+                  </button> : <button onClick={() => openAuth("login")}>Log in or create account</button>}
                   <button className="secondary-button" onClick={returnToGameModes}>Back to start screen</button>
                 </div>
+                {session && <p className="form-help">Saving as <strong>{typeof session.user.user_metadata.username === "string" ? session.user.user_metadata.username : "your account"}</strong>.</p>}
                 {scoreMessage && <p className="form-help" role="status">{scoreMessage}</p>}
               </div>
             ) : (
@@ -661,6 +791,8 @@ function App() {
         )}
       </section>
     </main>
+    {authDialog}
+    </>
   );
 }
 
