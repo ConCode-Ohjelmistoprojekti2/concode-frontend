@@ -15,6 +15,7 @@ type CorrectAnswers = {
     correctTitle: boolean;
     correctYear: boolean;
     correctGenre: boolean;
+    yearPointsAwarded: boolean;
 };
 
 export function getNextSurvivalLives(
@@ -43,6 +44,7 @@ export function calculatePoints(
     challengeType: ChallengeType,
     attemptNumber: number,
     alreadyCorrect: CorrectAnswers,
+    yearDifference: number | undefined,
 ): number {
     const multiplier = challengeType !== "daily" || attemptNumber === 1
         ? 1
@@ -55,12 +57,17 @@ export function calculatePoints(
 
     if (result.correctArtist && !alreadyCorrect.correctArtist) points += multiplier;
     if (result.correctTitle && !alreadyCorrect.correctTitle) points += multiplier;
-    if (challengeType === "daily" && result.correctYear && !alreadyCorrect.correctYear) {
-        points += 0.5 * multiplier;
+    if (
+        challengeType === "daily" &&
+        !alreadyCorrect.yearPointsAwarded &&
+        (result.correctYear || attemptNumber === DAILY_MAX_ATTEMPTS)
+    ) {
+        points += getYearPoints(yearDifference, result.correctYear) * multiplier;
     }
     if (challengeType === "daily" && result.correctGenre && !alreadyCorrect.correctGenre) {
         points += 0.5 * multiplier;
     }
+
 
     return points;
 }
@@ -68,4 +75,13 @@ export function calculatePoints(
 
 export function hasAttemptsRemaining(usedAttempts: number): boolean {
     return usedAttempts < DAILY_MAX_ATTEMPTS;
+}
+
+export function getYearPoints(yearDifference: number | undefined, correctYear: boolean): number {
+    if (yearDifference === undefined) return correctYear ? 0.5 : 0;
+    if (yearDifference == 0) return 0.5;
+    if (yearDifference >= 1 && yearDifference <= 4) return 0.5 * (2 / 3);
+    if (yearDifference >= 5 && yearDifference <= 10) return 0.5 * (1 / 3);
+    return 0;
+
 }
