@@ -1,10 +1,15 @@
+import type { ChallengeType, GuessResult, CorrectAnswers } from "./gameTypes";
+import { MainMenu } from "./MainMenu";
+import { ResultScreen } from "./ResultScreen";
+import { GuessForm } from "./GuessForm";
 import { useCallback, useEffect, useRef, useState } from "react";
-import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
+import { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
+import { GameStats } from "./GameStats";
+import { VideoPlayer } from "./VideoPlayer";
 import type { Session } from "@supabase/supabase-js";
 import "./App.css";
 import confettiGif from "./assets/confetti.gif";
 import skullGif from "./assets/skull.gif";
-import heartGif from "./assets/heart.gif";
 import { supabase, supabaseIsConfigured } from "./supabase";
 import {
   calculatePoints,
@@ -16,7 +21,7 @@ import {
   getYearPoints
 } from "./gameLogic";
 
-type ChallengeType = "random" | "daily";
+
 type AuthMode = "login" | "signup" | "forgot-password" | "reset-password";
 
 type LeaderboardScore = {
@@ -28,26 +33,9 @@ type ChallengeResponse = {
   youtubeVideoId: string;
 };
 
-type GuessResult = {
-  correctArtist: boolean;
-  correctTitle: boolean;
-  correctYear: boolean;
-  correctGenre: boolean;
-  answer: {
-    artist: string;
-    title: string;
-    year: number | string;
-    genre: string;
-  };
-};
 
-type CorrectAnswers = {
-  correctArtist: boolean;
-  correctTitle: boolean;
-  correctYear: boolean;
-  correctGenre: boolean;
-  yearPointsAwarded: boolean
-};
+
+
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -486,10 +474,6 @@ function App() {
     ? survivalLives
     : DAILY_MAX_ATTEMPTS - usedAttempts;
 
-  const heartStates = [0, 1, 2].map((index) => {
-    const remaining = lives - index;
-    return remaining >= 1 ? "full" : remaining >= 0.5 ? "half" : "empty";
-  });
   if (!gameStarted) {
     if (showLeaderboard) {
       return (
@@ -522,52 +506,7 @@ function App() {
 
     return (
       <>
-        <main className="main-menu">
-          <div className="menu-content">
-            <div className="account-actions">
-              {session ? <><span>Signed in as <strong>{typeof session.user.user_metadata.username === "string" ? session.user.user_metadata.username : session.user.email}</strong></span><button className="secondary-button" onClick={() => void signOut()}>Log out</button></> : <button className="secondary-button" onClick={() => openAuth("login")}>Log in</button>}
-            </div>
-            <p className="eyebrow">MUSIC GUESSING GAME</p>
-            <h1>Name The Video</h1>
-            <p className="menu-intro">
-              Guess the artist and song title from a short music video clip.
-            </p>
-            <div className="mode-grid">
-              <section className="mode-card">
-                <span className="mode-number">01 / ENDLESS</span>
-                <h2>Survival Mode</h2>
-                <p>Keep guessing songs, earn points and protect your lives.</p>
-                <button
-                  aria-label="Survival Mode"
-                  onClick={() => startGame("random")}
-                >
-                  Play Survival Mode
-                </button>
-              </section>
-              <section className="mode-card">
-                <span className="mode-number">02 / DAILY</span>
-                <h2>Daily Song</h2>
-                <p>One song each day. Guess the artist, title, year and genre.</p>
-                <button
-                  aria-label="Daily Song"
-                  onClick={() => startGame("daily")}
-                >
-                  Play Daily Song
-                </button>
-              </section>
-            </div>
-            <section className="leaderboard-card">
-              <div>
-                <span className="mode-number">03 / SCORES</span>
-                <h2>Leaderboards</h2>
-                <p>See how your score compares with other players.</p>
-              </div>
-              <button className="leaderboard-link" onClick={openLeaderboard}>
-                View leaderboards
-              </button>
-            </section>
-          </div>
-        </main>
+        <MainMenu session={session} signOut={signOut} openAuth={openAuth} startGame={startGame} openLeaderboard={openLeaderboard} />
         {authDialog}
       </>
     );
@@ -587,31 +526,7 @@ function App() {
             <h1 aria-label="Con Code">Name The Video</h1>
           </div>
         </header>
-        <section className="game-stats" aria-label="Game stats">
-          <div className="stat-card">
-            <span>Round</span>
-            <h2 aria-label={`Round: ${round}`}>{round}</h2>
-          </div>
-          <div className="stat-card">
-            <span>Score</span>
-            <h2 aria-label={`Score: ${Number(score.toFixed(2))}`}>
-              {Number(score.toFixed(2))}
-            </h2>
-          </div>
-          <div className="stat-card">
-            <span>Lives</span>
-            <div className="lives-hearts" role="img" aria-label={`${lives} lives left`}>
-              {heartStates.map((heartState, index) => (
-                <span className={`heart ${heartState}`} key={index}>
-                  <img src={heartGif} alt="" />
-                  {heartState === "half" && (
-                    <img className="heart-fill-half" src={heartGif} alt="" />
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
+        <GameStats round={round} score={score} lives={lives} />
         <section className={`play-panel ${gameCompleted ? "play-panel-completed" : ""}`}>
           <div className="panel-heading">
             <div>
@@ -621,32 +536,7 @@ function App() {
             <span className="round-tag">Round {round}</span>
           </div>
           {!gameCompleted && (
-            <div className="video-stage">
-              <div
-                className={`video-container ${isClipPlaying ? "visible" : "hidden"}`}
-              >
-                {videoId && (
-                  <YouTube
-                    key={videoId}
-                    videoId={videoId}
-                    onReady={onReady}
-                    opts={{
-                      width: "640",
-                      height: "360",
-                      playerVars: {
-                        controls: 0,
-                        disablekb: 1,
-                        cc_load_policy: 0,
-                      },
-                    }}
-                  />
-                )}
-                <div
-                  aria-hidden="true"
-                  className={`video-title-mask ${showVideo ? "hidden" : "visible"}`}
-                />
-              </div>
-            </div>
+            <VideoPlayer videoId={videoId} isClipPlaying={isClipPlaying} showVideo={showVideo} onReady={onReady} />
           )}
           {!hasGuessed && (
             <div className="play-controls">
@@ -656,176 +546,9 @@ function App() {
             </div>
           )}
           {!hasGuessed ? (
-            <div className="guess-card">
-              <h3>Your answer</h3>
-              <p className="form-help">Enter the artist and song title below.</p>
-              <div className="guess-grid">
-                <label className="guess-field">
-                  <span>Artist</span>
-                  <span className="input-holder">
-                    <input
-                      type="text"
-                      value={artistGuess}
-                      onChange={(e) => setArtistGuess(e.target.value)}
-                      placeholder="Artist"
-                    />
-                    {challengeType === "daily" && guessResult && (
-                      <span
-                        className="answer-mark"
-                        role="img"
-                        aria-label={
-                          correctAnswers.correctArtist ? "Correct" : "Incorrect"
-                        }
-                      >
-                        {correctAnswers.correctArtist ? "✅" : "❌"}
-                      </span>
-                    )}
-                  </span>
-                </label>
-                <label className="guess-field">
-                  <span>Song title</span>
-                  <span className="input-holder">
-                    <input
-                      type="text"
-                      value={titleGuess}
-                      onChange={(e) => setTitleGuess(e.target.value)}
-                      placeholder="Song Title"
-                    />
-                    {challengeType === "daily" && guessResult && (
-                      <span
-                        className="answer-mark"
-                        role="img"
-                        aria-label={
-                          correctAnswers.correctTitle ? "Correct" : "Incorrect"
-                        }
-                      >
-                        {correctAnswers.correctTitle ? "✅" : "❌"}
-                      </span>
-                    )}
-                  </span>
-                </label>
-                {challengeType === "daily" && (
-                  <>
-                    <label className="guess-field">
-                      <span>Release year</span>
-                      <span className="input-holder">
-                        <input
-                          type="text"
-                          value={yearGuess}
-                          onChange={(e) => setYearGuess(e.target.value)}
-                          placeholder="Release Year"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={4}
-                          disabled={correctAnswers.correctYear}
-                        />
-                        {guessResult && (
-                          <span
-                            className="answer-mark"
-                            role="img"
-                            aria-label={
-                              correctAnswers.correctYear ? "Correct" : "Incorrect"
-                            }
-                          >
-                            {correctAnswers.correctYear ? "✅" : "❌"}
-                          </span>
-                        )}
-                      </span>
-                    </label>
-                    <label className="guess-field">
-                      <span>Genre</span>
-                      <span className="input-holder genre-holder">
-                        <select
-                          className={genreGuess ? "" : "genre-placeholder"}
-                          value={genreGuess}
-                          onChange={(e) => setGenreGuess(e.target.value)}
-                          disabled={isLoadingGenres || genres.length === 0}
-                        >
-                          <option value="">Genre</option>
-                          {genres.map((genre) => (
-                            <option key={genre} value={genre}>
-                              {genre}
-                            </option>
-                          ))}
-                        </select>
-                        {guessResult && (
-                          <span
-                            className="answer-mark"
-                            role="img"
-                            aria-label={
-                              correctAnswers.correctGenre
-                                ? "Correct"
-                                : "Incorrect"
-                            }
-                          >
-                            {correctAnswers.correctGenre ? "✅" : "❌"}
-                          </span>
-                        )}
-                      </span>
-                      {genreLoadMessage && (
-                        <span className="genre-error" role="alert">
-                          {genreLoadMessage}
-                        </span>
-                      )}
-                    </label>
-                  </>
-                )}
-              </div>
-              <div className="form-actions">
-                <button className="submit-button" onClick={submitGuess}>
-                  Submit
-                </button>
-                <button className="secondary-button" onClick={returnToGameModes}>
-                  Back
-                </button>
-              </div>
-            </div>
+            <GuessForm challengeType={challengeType} guessResult={guessResult} correctAnswers={correctAnswers} artistGuess={artistGuess} setArtistGuess={setArtistGuess} titleGuess={titleGuess} setTitleGuess={setTitleGuess} yearGuess={yearGuess} setYearGuess={setYearGuess} genreGuess={genreGuess} setGenreGuess={setGenreGuess} isLoadingGenres={isLoadingGenres} genres={genres} genreLoadMessage={genreLoadMessage} submitGuess={submitGuess} returnToGameModes={returnToGameModes} />
           ) : (
-            <div className="result-card">
-              <p className="eyebrow">ROUND SUMMARY</p>
-              <h3>Results</h3>
-              <div className="result-line">
-                <span>Artist</span>
-                <strong>{guessResult?.answer?.artist}</strong>
-                <span>{correctAnswers.correctArtist ? "✅" : "❌"}</span>
-              </div>
-              <div className="result-line">
-                <span>Song</span>
-                <strong>{guessResult?.answer?.title}</strong>
-                <span>{correctAnswers.correctTitle ? "✅" : "❌"}</span>
-              </div>
-              {challengeType === "daily" && (
-                <>
-                  <div className="result-line">
-                    <span>Release year</span>
-                    <strong>{guessResult?.answer?.year}</strong>
-                    <span>{correctAnswers.correctYear ? "✅" : "❌"}</span>
-                  </div>
-                  <div className="result-line">
-                    <span>Genre</span>
-                    <strong>{guessResult?.answer?.genre}</strong>
-                    <span>{correctAnswers.correctGenre ? "✅" : "❌"}</span>
-                  </div>
-                </>
-              )}
-              {gameCompleted ? (
-                <div className="score-entry">
-                  <p>Your final score: <strong>{Number(finalScore.toFixed(2))}</strong></p>
-                  <div className="form-actions">
-                    {session ? <button onClick={() => void saveScore()} disabled={isSavingScore || scoreMessage === "Score saved to the leaderboard."}>
-                      {isSavingScore ? "Saving..." : "Save score"}
-                    </button> : <button onClick={() => openAuth("login")}>Log in or create account</button>}
-                    <button className="secondary-button" onClick={returnToGameModes}>Back to start screen</button>
-                  </div>
-                  {session && <p className="form-help">Saving as <strong>{typeof session.user.user_metadata.username === "string" ? session.user.user_metadata.username : "your account"}</strong>.</p>}
-                  {scoreMessage && <p className="form-help" role="status">{scoreMessage}</p>}
-                </div>
-              ) : (
-                <button className="result-button" onClick={challengeType === "daily" || hasSurvivalGameEnded(survivalLives) ? returnToGameModes : handleNextRound}>
-                  {challengeType === "daily" || hasSurvivalGameEnded(survivalLives) ? "Back to start screen" : "Next Round"}
-                </button>
-              )}
-            </div>
+            <ResultScreen guessResult={guessResult} correctAnswers={correctAnswers} challengeType={challengeType} gameCompleted={gameCompleted} finalScore={finalScore} session={session} saveScore={saveScore} isSavingScore={isSavingScore} scoreMessage={scoreMessage} openAuth={openAuth} returnToGameModes={returnToGameModes} survivalLives={survivalLives} handleNextRound={handleNextRound} />
           )}
         </section>
       </main>
