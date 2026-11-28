@@ -383,7 +383,7 @@ function App() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          score: Math.round(finalScore),
+          score: Number(finalScore.toFixed(2)),
           mode: challengeType.toUpperCase(),
         }),
       });
@@ -508,7 +508,7 @@ function App() {
               <section className="leaderboard-list" aria-live="polite">
                 {leaderboard.map((entry, index) => (
                   <div className="leaderboard-row" key={`${entry.playerName}-${index}`}>
-                    <span>#{index + 1}</span><strong>{entry.playerName}</strong><span>{entry.score} pts</span>
+                    <span>#{index + 1}</span><strong>{entry.playerName}</strong><span>{leaderboardMode === "daily" ? entry.score.toFixed(2) : entry.score} pts</span>
                   </div>
                 ))}
                 {leaderboardMessage && <p className="form-help">{leaderboardMessage}</p>}
